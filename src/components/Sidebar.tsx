@@ -49,48 +49,48 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-gray-900 rounded-lg shadow-xl p-2 flex flex-col gap-2">
+    <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-gray-900/90 backdrop-blur-sm rounded-2xl shadow-xl p-3 flex flex-col gap-3">
       <button
         onClick={createBox}
-        className="p-2 rounded hover:bg-gray-800 group"
+        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
         title="Add Box"
       >
-        <Cube className="w-5 h-5 text-white group-hover:text-blue-400" />
+        <Cube className="w-6 h-6 text-white group-hover:text-blue-400 transition-colors" />
       </button>
       <button
         onClick={createSphere}
-        className="p-2 rounded hover:bg-gray-800 group"
+        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
         title="Add Sphere"
       >
-        <Sphere className="w-5 h-5 text-white group-hover:text-red-400" />
+        <Sphere className="w-6 h-6 text-white group-hover:text-red-400 transition-colors" />
       </button>
       <button
         onClick={createCylinder}
-        className="p-2 rounded hover:bg-gray-800 group"
+        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
         title="Add Cylinder"
       >
-        <Cylinder className="w-5 h-5 text-white group-hover:text-green-400" />
+        <Cylinder className="w-6 h-6 text-white group-hover:text-green-400 transition-colors" />
       </button>
       <button
         onClick={createCone}
-        className="p-2 rounded hover:bg-gray-800 group"
+        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
         title="Add Cone"
       >
-        <Cone className="w-5 h-5 text-white group-hover:text-orange-400" />
+        <Cone className="w-6 h-6 text-white group-hover:text-orange-400 transition-colors" />
       </button>
       <button
         onClick={createTorus}
-        className="p-2 rounded hover:bg-gray-800 group"
+        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
         title="Add Torus"
       >
-        <Circle className="w-5 h-5 text-white group-hover:text-pink-400" />
+        <Circle className="w-6 h-6 text-white group-hover:text-pink-400 transition-colors" />
       </button>
       <button
         onClick={createTetrahedron}
-        className="p-2 rounded hover:bg-gray-800 group"
+        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
         title="Add Tetrahedron"
       >
-        <Triangle className="w-5 h-5 text-white group-hover:text-cyan-400" />
+        <Triangle className="w-6 h-6 text-white group-hover:text-cyan-400 transition-colors" />
       </button>
     </div>
   );

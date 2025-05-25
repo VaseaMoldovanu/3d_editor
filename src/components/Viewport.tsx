@@ -1,6 +1,6 @@
 import React from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, TransformControls } from '@react-three/drei';
+import { OrbitControls, TransformControls, Environment } from '@react-three/drei';
 import { useEditorStore } from '../store';
 
 function Scene() {
@@ -8,8 +8,9 @@ function Scene() {
 
   return (
     <>
+      <Environment preset="city" />
       <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1} />
+      <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
       {objects.map((object, index) => (
         <primitive 
           key={index} 
@@ -18,6 +19,8 @@ function Scene() {
             e.stopPropagation();
             setSelectedObject(object);
           }}
+          castShadow
+          receiveShadow
         />
       ))}
       {selectedObject && (
@@ -25,12 +28,10 @@ function Scene() {
           object={selectedObject} 
           mode={mode}
           onMouseDown={() => {
-            // Disable orbit controls while transforming
             const orbitControls = document.querySelector('.orbit-controls');
             if (orbitControls) orbitControls.setAttribute('enabled', 'false');
           }}
           onMouseUp={() => {
-            // Re-enable orbit controls after transforming
             const orbitControls = document.querySelector('.orbit-controls');
             if (orbitControls) orbitControls.setAttribute('enabled', 'true');
           }}
@@ -38,7 +39,6 @@ function Scene() {
       )}
       <OrbitControls makeDefault className="orbit-controls" />
       <gridHelper args={[20, 20]} />
-      {/* Click on empty space to deselect */}
       <mesh 
         position={[0, -0.01, 0]} 
         rotation={[-Math.PI / 2, 0, 0]} 
