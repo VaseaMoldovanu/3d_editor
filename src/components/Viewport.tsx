@@ -9,8 +9,8 @@ function Scene() {
   return (
     <>
       <Environment preset="city" />
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+      <ambientLight intensity={0.8} />
+      <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
       {objects.map((object, index) => (
         <primitive 
           key={index} 
@@ -55,7 +55,7 @@ function Scene() {
 
 export default function Viewport() {
   return (
-    <div className="w-full h-full bg-gray-950">
+    <div className="w-full h-full bg-gradient-to-br from-gray-50 to-white">
       <Canvas
         camera={{ position: [5, 5, 5], fov: 75 }}
         shadows

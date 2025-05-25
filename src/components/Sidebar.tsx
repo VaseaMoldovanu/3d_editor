@@ -49,48 +49,48 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-gray-900/90 backdrop-blur-sm rounded-2xl shadow-xl p-3 flex flex-col gap-3">
+    <div className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 p-3 flex flex-col gap-3">
       <button
         onClick={createBox}
-        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
+        className="p-3 rounded-xl hover:bg-blue-50 transition-all group"
         title="Add Box"
       >
-        <Cube className="w-6 h-6 text-white group-hover:text-blue-400 transition-colors" />
+        <Cube className="w-6 h-6 text-gray-700 group-hover:text-blue-500 transition-colors" />
       </button>
       <button
         onClick={createSphere}
-        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
+        className="p-3 rounded-xl hover:bg-red-50 transition-all group"
         title="Add Sphere"
       >
-        <Sphere className="w-6 h-6 text-white group-hover:text-red-400 transition-colors" />
+        <Sphere className="w-6 h-6 text-gray-700 group-hover:text-red-500 transition-colors" />
       </button>
       <button
         onClick={createCylinder}
-        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
+        className="p-3 rounded-xl hover:bg-green-50 transition-all group"
         title="Add Cylinder"
       >
-        <Cylinder className="w-6 h-6 text-white group-hover:text-green-400 transition-colors" />
+        <Cylinder className="w-6 h-6 text-gray-700 group-hover:text-green-500 transition-colors" />
       </button>
       <button
         onClick={createCone}
-        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
+        className="p-3 rounded-xl hover:bg-orange-50 transition-all group"
         title="Add Cone"
       >
-        <Cone className="w-6 h-6 text-white group-hover:text-orange-400 transition-colors" />
+        <Cone className="w-6 h-6 text-gray-700 group-hover:text-orange-500 transition-colors" />
       </button>
       <button
         onClick={createTorus}
-        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
+        className="p-3 rounded-xl hover:bg-pink-50 transition-all group"
         title="Add Torus"
       >
-        <Circle className="w-6 h-6 text-white group-hover:text-pink-400 transition-colors" />
+        <Circle className="w-6 h-6 text-gray-700 group-hover:text-pink-500 transition-colors" />
       </button>
       <button
         onClick={createTetrahedron}
-        className="p-3 rounded-xl hover:bg-gray-800 transition-all group"
+        className="p-3 rounded-xl hover:bg-cyan-50 transition-all group"
         title="Add Tetrahedron"
       >
-        <Triangle className="w-6 h-6 text-white group-hover:text-cyan-400 transition-colors" />
+        <Triangle className="w-6 h-6 text-gray-700 group-hover:text-cyan-500 transition-colors" />
       </button>
     </div>
   );
