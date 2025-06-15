@@ -12,6 +12,7 @@ interface EditorState {
   setObjectColor: (color: string) => void;
   groupObjects: (objects: THREE.Object3D[]) => void;
   ungroupObjects: (group: THREE.Group) => void;
+  addHoleToObject: (holeGeometry: THREE.BufferGeometry) => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -97,5 +98,31 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       objects: newObjects,
       selectedObject: children[0] || null
     };
+  }),
+
+  addHoleToObject: (holeGeometry) => set((state) => {
+    if (!state.selectedObject || !('geometry' in state.selectedObject)) return state;
+    
+    const mesh = state.selectedObject as THREE.Mesh;
+    
+    // Create hole mesh with dark, semi-transparent material
+    const holeMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x111111, 
+      transparent: true, 
+      opacity: 0.4,
+      roughness: 0.8,
+      metalness: 0.1
+    });
+    
+    const holeMesh = new THREE.Mesh(holeGeometry, holeMaterial);
+    
+    // Position hole at center of selected object
+    holeMesh.position.set(0, 0, 0);
+    holeMesh.name = 'Hole';
+    
+    // Add hole as child of the selected object
+    mesh.add(holeMesh);
+    
+    return state;
   }),
 }));
