@@ -1,11 +1,11 @@
 import React from 'react';
-import { Move, RotateCw, Maximize2, FileDown, Palette, Trash2 } from 'lucide-react';
+import { Move, RotateCw, Maximize2, FileDown, Palette, Trash2, Circle, Group } from 'lucide-react';
 import { useEditorStore } from '../store';
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter';
 import * as THREE from 'three';
 
 export default function Toolbar() {
-  const { mode, setMode, objects, selectedObject, setObjectColor, removeObject, setSelectedObject } = useEditorStore();
+  const { mode, setMode, objects, selectedObject, setObjectColor, removeObject, setSelectedObject, groupObjects, ungroupObjects } = useEditorStore();
 
   const handleExport = () => {
     const exporter = new OBJExporter();
@@ -32,6 +32,41 @@ export default function Toolbar() {
     if (selectedObject) {
       removeObject(selectedObject);
       setSelectedObject(null);
+    }
+  };
+
+  const createHole = () => {
+    if (!selectedObject || !('geometry' in selectedObject)) return;
+    
+    const mesh = selectedObject as THREE.Mesh;
+    const holeGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2, 16);
+    const holeMesh = new THREE.Mesh(holeGeometry, new THREE.MeshBasicMaterial({ color: 0x000000 }));
+    
+    // Position hole at center of selected object
+    holeMesh.position.copy(mesh.position);
+    
+    // Create CSG-like effect by making the hole darker and slightly transparent
+    const holeMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x222222, 
+      transparent: true, 
+      opacity: 0.3 
+    });
+    holeMesh.material = holeMaterial;
+    
+    // Add hole as child of the selected object
+    mesh.add(holeMesh);
+  };
+
+  const handleGroup = () => {
+    const selectedObjects = objects.filter(obj => obj.userData.selected);
+    if (selectedObjects.length > 1) {
+      groupObjects(selectedObjects);
+    }
+  };
+
+  const handleUngroup = () => {
+    if (selectedObject && selectedObject.type === 'Group') {
+      ungroupObjects(selectedObject as THREE.Group);
     }
   };
 
@@ -66,8 +101,29 @@ export default function Toolbar() {
           <Maximize2 className={`w-5 h-5 ${mode === 'scale' ? 'text-white' : 'text-gray-700'}`} />
         </button>
       </div>
+      
       <div className="w-px h-6 bg-gray-200 my-auto" />
+      
       <div className="flex gap-2">
+        <button
+          onClick={createHole}
+          className={`p-2 rounded-lg transition-all hover:bg-gray-50 ${
+            !selectedObject ? 'opacity-50 cursor-not-allowed' : 'hover:text-gray-900'
+          }`}
+          title="Create Hole"
+          disabled={!selectedObject}
+        >
+          <Circle className="w-5 h-5 text-gray-700" />
+        </button>
+        
+        <button
+          onClick={handleGroup}
+          className="p-2 rounded-lg transition-all hover:bg-gray-50 hover:text-gray-900"
+          title="Group Objects"
+        >
+          <Group className="w-5 h-5 text-gray-700" />
+        </button>
+        
         <div className="relative group">
           <button
             className={`p-2 rounded-lg transition-all hover:bg-white ${!selectedObject ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -83,6 +139,7 @@ export default function Toolbar() {
             disabled={!selectedObject}
           />
         </div>
+        
         <button
           onClick={handleDelete}
           className={`p-2 rounded-lg transition-all hover:bg-red-50 ${
@@ -93,6 +150,7 @@ export default function Toolbar() {
         >
           <Trash2 className="w-5 h-5 text-gray-700" />
         </button>
+        
         <button
           onClick={handleExport}
           className="p-2 rounded-lg transition-all hover:bg-white"
