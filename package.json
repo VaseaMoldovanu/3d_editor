@@ -16,8 +16,9 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "three": "^0.162.0",
-    "zustand": "^4.5.2",
-    "websocket": "^1.0.34"
+    "three-csg-ts": "^3.2.0",
+    "websocket": "^1.0.34",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
