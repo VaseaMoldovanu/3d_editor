@@ -7,16 +7,19 @@ interface EditorState {
   selectedObject: THREE.Object3D | null;
   selectedObjects: THREE.Object3D[];
   mode: 'translate' | 'rotate' | 'scale';
+  shapeMode: 'solid' | 'hole';
   addObject: (object: THREE.Object3D) => void;
   removeObject: (object: THREE.Object3D) => void;
   setSelectedObject: (object: THREE.Object3D | null) => void;
   toggleObjectSelection: (object: THREE.Object3D) => void;
   clearSelection: () => void;
   setMode: (mode: 'translate' | 'rotate' | 'scale') => void;
+  setShapeMode: (mode: 'solid' | 'hole') => void;
   setObjectColor: (color: string) => void;
   groupObjects: () => void;
   ungroupObjects: (group: THREE.Group) => void;
   addHoleToObject: (holeGeometry: THREE.BufferGeometry) => void;
+  addShapeAsObject: (geometry: THREE.BufferGeometry, name: string) => void;
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -24,6 +27,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectedObject: null,
   selectedObjects: [],
   mode: 'translate',
+  shapeMode: 'solid',
   
   addObject: (object) => set((state) => ({ objects: [...state.objects, object] })),
   
@@ -55,19 +59,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   
   setMode: (mode) => set({ mode }),
   
+  setShapeMode: (mode) => set({ shapeMode: mode }),
+  
   setObjectColor: (color) => set((state) => {
-    if (state.selectedObject && 'material' in state.selectedObject) {
-      const mesh = state.selectedObject as THREE.Mesh;
-      if (Array.isArray(mesh.material)) {
-        mesh.material.forEach(mat => {
-          if (mat instanceof THREE.MeshStandardMaterial) {
-            mat.color.setHex(parseInt(color.replace('#', '0x')));
-          }
-        });
-      } else if (mesh.material instanceof THREE.MeshStandardMaterial) {
-        mesh.material.color.setHex(parseInt(color.replace('#', '0x')));
+    state.selectedObjects.forEach(obj => {
+      if ('material' in obj) {
+        const mesh = obj as THREE.Mesh;
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach(mat => {
+            if (mat instanceof THREE.MeshStandardMaterial) {
+              mat.color.setHex(parseInt(color.replace('#', '0x')));
+            }
+          });
+        } else if (mesh.material instanceof THREE.MeshStandardMaterial) {
+          mesh.material.color.setHex(parseInt(color.replace('#', '0x')));
+        }
       }
-    }
+    });
     return state;
   }),
   
@@ -162,7 +170,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       
       return {
         objects: newObjects,
-        selectedObject: resultMesh
+        selectedObject: resultMesh,
+        selectedObjects: [resultMesh]
       };
     } catch (error) {
       console.warn('CSG operation failed, falling back to visual hole:', error);
@@ -184,5 +193,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       
       return state;
     }
+  }),
+
+  addShapeAsObject: (geometry, name) => set((state) => {
+    const colors = [0x4a9eff, 0xff4a4a, 0x4aff4a, 0xffaa00, 0xff00ff, 0x00ffff, 0xffa500, 0x9370db];
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    const material = new THREE.MeshStandardMaterial({ color: randomColor });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = name;
+    mesh.position.set(
+      (Math.random() - 0.5) * 4,
+      Math.random() * 2,
+      (Math.random() - 0.5) * 4
+    );
+    
+    return { objects: [...state.objects, mesh] };
   }),
 }));
