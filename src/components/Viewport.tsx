@@ -2,6 +2,7 @@ import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, TransformControls, Environment, Stars } from '@react-three/drei';
 import { useEditorStore } from '../store';
+import * as THREE from 'three';
 
 function Scene() {
   const { objects, selectedObject, selectedObjects, mode, setSelectedObject, toggleObjectSelection, clearSelection } = useEditorStore();
@@ -92,12 +93,12 @@ function Scene() {
           mode={mode}
           size={0.8}
           onMouseDown={() => {
-            const orbitControls = document.querySelector('.orbit-controls');
-            if (orbitControls) orbitControls.setAttribute('enabled', 'false');
+            const orbitControls = document.querySelector('.orbit-controls') as any;
+            if (orbitControls) orbitControls.enabled = false;
           }}
           onMouseUp={() => {
-            const orbitControls = document.querySelector('.orbit-controls');
-            if (orbitControls) orbitControls.setAttribute('enabled', 'true');
+            const orbitControls = document.querySelector('.orbit-controls') as any;
+            if (orbitControls) orbitControls.enabled = true;
           }}
         />
       )}
@@ -116,9 +117,6 @@ function Scene() {
       <gridHelper 
         args={[30, 30]} 
         position={[0, 0, 0]}
-        material-color="#334155"
-        material-opacity={0.3}
-        material-transparent={true}
       />
       
       {/* Ground Plane with Subtle Gradient */}
