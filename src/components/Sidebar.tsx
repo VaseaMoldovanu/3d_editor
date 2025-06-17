@@ -1,43 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Cuboid as Cube, 
-  Cherry as Sphere, 
-  Cylinder, 
-  Cone, 
-  Circle, 
-  Triangle,
-  ChevronDown,
-  ChevronRight,
-  Square,
-  Star,
-  Heart,
-  Hexagon,
-  Diamond,
-  Octagon,
-  Plus,
-  Zap,
-  Moon,
-  Sun,
-  Flower,
-  Crown,
-  Shield,
-  Home,
-  Car,
-  Plane,
-  Key,
-  Leaf,
-  Fish,
-  Smile,
-  Target,
-  Phone,
-  Type,
-  Sparkles,
-  Layers3,
-  Minus,
-  Settings,
-  Palette2,
-  Wrench
-} from 'lucide-react';
+import { Cuboid as Cube, Cherry as Sphere, Cylinder, Cone, Circle, Triangle, ChevronDown, ChevronRight, Square, Star, Heart, Hexagon, Diamond, Octagon, Plus, Zap, Moon, Sun, Flower, Crown, Shield, Home, Car, Plane, Key, Leaf, Fish, Smile, Target, Phone, Type, Sparkles, Layers3, Minus, Settings, Palette as Palette2, Wrench } from 'lucide-react';
 import { useEditorStore } from '../store';
 import * as THREE from 'three';
 
