@@ -22,6 +22,51 @@ interface EditorState {
   addShapeAsObject: (geometry: THREE.BufferGeometry, name: string) => void;
 }
 
+// Enhanced material creation with realistic properties
+const createRealisticMaterial = (color: number, materialType: 'metal' | 'plastic' | 'ceramic' | 'wood' = 'plastic') => {
+  const baseColor = new THREE.Color(color);
+  
+  switch (materialType) {
+    case 'metal':
+      return new THREE.MeshStandardMaterial({
+        color: baseColor,
+        metalness: 0.9,
+        roughness: 0.1,
+        envMapIntensity: 1.5,
+        clearcoat: 0.1,
+        clearcoatRoughness: 0.1,
+      });
+    
+    case 'ceramic':
+      return new THREE.MeshStandardMaterial({
+        color: baseColor,
+        metalness: 0.0,
+        roughness: 0.2,
+        envMapIntensity: 0.8,
+        clearcoat: 0.8,
+        clearcoatRoughness: 0.2,
+      });
+    
+    case 'wood':
+      return new THREE.MeshStandardMaterial({
+        color: baseColor,
+        metalness: 0.0,
+        roughness: 0.8,
+        envMapIntensity: 0.3,
+      });
+    
+    default: // plastic
+      return new THREE.MeshStandardMaterial({
+        color: baseColor,
+        metalness: 0.1,
+        roughness: 0.4,
+        envMapIntensity: 0.6,
+        clearcoat: 0.3,
+        clearcoatRoughness: 0.4,
+      });
+  }
+};
+
 export const useEditorStore = create<EditorState>((set, get) => ({
   objects: [],
   selectedObject: null,
@@ -29,7 +74,24 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   mode: 'translate',
   shapeMode: 'solid',
   
-  addObject: (object) => set((state) => ({ objects: [...state.objects, object] })),
+  addObject: (object) => {
+    // Enhance object with realistic properties
+    if ('material' in object) {
+      const mesh = object as THREE.Mesh;
+      if (mesh.material instanceof THREE.MeshStandardMaterial) {
+        // Add subtle variations for realism
+        mesh.material.roughness += (Math.random() - 0.5) * 0.1;
+        mesh.material.metalness += (Math.random() - 0.5) * 0.05;
+      }
+    }
+    
+    // Add physics-like properties
+    object.userData.mass = 1.0;
+    object.userData.friction = 0.5;
+    object.userData.restitution = 0.3;
+    
+    set((state) => ({ objects: [...state.objects, object] }));
+  },
   
   removeObject: (object) =>
     set((state) => ({ 
@@ -69,10 +131,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
           mesh.material.forEach(mat => {
             if (mat instanceof THREE.MeshStandardMaterial) {
               mat.color.setHex(parseInt(color.replace('#', '0x')));
+              // Maintain realistic material properties
+              mat.needsUpdate = true;
             }
           });
         } else if (mesh.material instanceof THREE.MeshStandardMaterial) {
           mesh.material.color.setHex(parseInt(color.replace('#', '0x')));
+          mesh.material.needsUpdate = true;
         }
       }
     });
@@ -158,12 +223,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       
       // Convert back to mesh
       const resultMesh = CSG.toMesh(resultCSG, mesh.matrix);
-      resultMesh.material = mesh.material;
+      
+      // Preserve and enhance material properties
+      if (mesh.material instanceof THREE.MeshStandardMaterial) {
+        resultMesh.material = mesh.material.clone();
+        // Add slight wear to cut surfaces
+        (resultMesh.material as THREE.MeshStandardMaterial).roughness += 0.1;
+      } else {
+        resultMesh.material = mesh.material;
+      }
+      
       resultMesh.position.copy(mesh.position);
       resultMesh.rotation.copy(mesh.rotation);
       resultMesh.scale.copy(mesh.scale);
       resultMesh.name = mesh.name;
       resultMesh.userData = { ...mesh.userData };
+      resultMesh.castShadow = true;
+      resultMesh.receiveShadow = true;
       
       // Replace original mesh with result
       const newObjects = state.objects.map(obj => obj === mesh ? resultMesh : obj);
@@ -176,18 +252,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     } catch (error) {
       console.warn('CSG operation failed, falling back to visual hole:', error);
       
-      // Fallback: Add visual hole as child
+      // Enhanced fallback with better visual integration
       const holeMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0x111111, 
+        color: 0x0a0a0a, 
         transparent: true, 
-        opacity: 0.4,
-        roughness: 0.8,
-        metalness: 0.1
+        opacity: 0.6,
+        roughness: 0.9,
+        metalness: 0.0,
+        envMapIntensity: 0.1
       });
       
       const holeMesh = new THREE.Mesh(holeGeometry, holeMaterial);
       holeMesh.position.set(0, 0, 0);
       holeMesh.name = 'Hole';
+      holeMesh.castShadow = true;
+      holeMesh.receiveShadow = true;
       
       mesh.add(holeMesh);
       
@@ -196,17 +275,39 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   }),
 
   addShapeAsObject: (geometry, name) => set((state) => {
+    // More sophisticated material selection
+    const materialTypes: Array<'metal' | 'plastic' | 'ceramic' | 'wood'> = ['metal', 'plastic', 'ceramic', 'wood'];
     const colors = [0x4a9eff, 0xff4a4a, 0x4aff4a, 0xffaa00, 0xff00ff, 0x00ffff, 0xffa500, 0x9370db];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
     
-    const material = new THREE.MeshStandardMaterial({ color: randomColor });
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    const randomMaterialType = materialTypes[Math.floor(Math.random() * materialTypes.length)];
+    
+    const material = createRealisticMaterial(randomColor, randomMaterialType);
     const mesh = new THREE.Mesh(geometry, material);
+    
     mesh.name = name;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    
+    // More natural positioning with slight randomization
     mesh.position.set(
-      (Math.random() - 0.5) * 4,
-      Math.random() * 2,
-      (Math.random() - 0.5) * 4
+      (Math.random() - 0.5) * 6,
+      Math.random() * 3 + 0.5,
+      (Math.random() - 0.5) * 6
     );
+    
+    // Add slight random rotation for realism
+    mesh.rotation.set(
+      (Math.random() - 0.5) * 0.2,
+      Math.random() * Math.PI * 2,
+      (Math.random() - 0.5) * 0.2
+    );
+    
+    // Store material type for future reference
+    mesh.userData.materialType = randomMaterialType;
+    mesh.userData.mass = 1.0;
+    mesh.userData.friction = 0.5;
+    mesh.userData.restitution = 0.3;
     
     return { objects: [...state.objects, mesh] };
   }),
