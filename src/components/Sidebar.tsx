@@ -1,5 +1,41 @@
 import React, { useState } from 'react';
-import { Cuboid as Cube, Cherry as Sphere, Cylinder, Cone, Circle, Triangle, ChevronDown, ChevronRight, Square, Star, Heart, Hexagon, Diamond, Octagon, Plus, Zap, Moon, Sun, Flower, Crown, Shield, Home, Car, Plane, Key, Leaf, Fish, Smile, Target, Phone, Type, Sparkles, Layers3, Minus, Settings, Palette as Palette2, Wrench } from 'lucide-react';
+import { 
+  Cuboid as Cube, 
+  Cherry as Sphere, 
+  Cylinder, 
+  Cone, 
+  Circle, 
+  Triangle, 
+  ChevronDown, 
+  ChevronRight, 
+  Square, 
+  Star, 
+  Heart, 
+  Hexagon, 
+  Diamond, 
+  Octagon, 
+  Plus, 
+  Zap, 
+  Moon, 
+  Type, 
+  Sparkles, 
+  Layers3, 
+  Minus, 
+  Settings,
+  Home,
+  Car,
+  Plane,
+  Key,
+  Leaf,
+  Fish,
+  Smile,
+  Target,
+  Phone,
+  Crown,
+  Shield,
+  Flower,
+  Sun
+} from 'lucide-react';
 import { useEditorStore } from '../store';
 import * as THREE from 'three';
 
@@ -9,19 +45,19 @@ export default function Sidebar() {
     selectedObject, 
     addHoleToObject, 
     addShapeAsObject,
-    shapeMode 
+    shapeMode,
+    showHoles
   } = useEditorStore();
   
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     primitives: true,
     shapes: true,
-    materials: false
+    text: true
   });
-  const [holeSize, setHoleSize] = useState(0.3);
+  const [holeSize, setHoleSize] = useState(0.5);
   const [holeDepth, setHoleDepth] = useState(0.5);
   const [textInput, setTextInput] = useState('HELLO');
-  const [selectedMaterial, setSelectedMaterial] = useState<'metal' | 'plastic' | 'ceramic' | 'wood'>('plastic');
-  const [surfaceQuality, setSurfaceQuality] = useState(32);
+  const [selectedMaterial, setSelectedMaterial] = useState<'plastic' | 'metal' | 'ceramic' | 'wood'>('plastic');
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -30,132 +66,131 @@ export default function Sidebar() {
     }));
   };
 
-  // Enhanced material creation
-  const createRealisticMaterial = (color: number, materialType: 'metal' | 'plastic' | 'ceramic' | 'wood' = 'plastic') => {
+  // Tinkercad-style material creation
+  const createTinkercadMaterial = (color: number, isHole: boolean = false) => {
     const baseColor = new THREE.Color(color);
     
-    switch (materialType) {
-      case 'metal':
-        return new THREE.MeshStandardMaterial({
-          color: baseColor,
-          metalness: 0.9,
-          roughness: 0.1,
-          envMapIntensity: 1.5,
-          clearcoat: 0.1,
-          clearcoatRoughness: 0.1,
-        });
-      
-      case 'ceramic':
-        return new THREE.MeshStandardMaterial({
-          color: baseColor,
-          metalness: 0.0,
-          roughness: 0.2,
-          envMapIntensity: 0.8,
-          clearcoat: 0.8,
-          clearcoatRoughness: 0.2,
-        });
-      
-      case 'wood':
-        return new THREE.MeshStandardMaterial({
-          color: baseColor,
-          metalness: 0.0,
-          roughness: 0.8,
-          envMapIntensity: 0.3,
-        });
-      
-      default: // plastic
-        return new THREE.MeshStandardMaterial({
-          color: baseColor,
-          metalness: 0.1,
-          roughness: 0.4,
-          envMapIntensity: 0.6,
-          clearcoat: 0.3,
-          clearcoatRoughness: 0.4,
-        });
+    if (isHole && showHoles) {
+      return new THREE.MeshStandardMaterial({
+        color: 0xff4444,
+        transparent: true,
+        opacity: 0.6,
+        roughness: 0.4,
+        metalness: 0.1,
+      });
     }
+    
+    return new THREE.MeshStandardMaterial({
+      color: baseColor,
+      roughness: 0.3,
+      metalness: 0.1,
+      envMapIntensity: 0.5,
+    });
   };
 
-  // Enhanced primitive creation functions with realistic materials
+  // Enhanced primitive creation functions
   const createBox = () => {
-    const geometry = new THREE.BoxGeometry(1, 1, 1, surfaceQuality/8, surfaceQuality/8, surfaceQuality/8);
-    const material = createRealisticMaterial(0x4a9eff, selectedMaterial);
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = createTinkercadMaterial(0x4a9eff, shapeMode === 'hole');
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = 'Box';
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.materialType = selectedMaterial;
+    mesh.userData.isHole = shapeMode === 'hole';
+    mesh.position.set(0, 0.5, 0);
     addObject(mesh);
   };
 
   const createSphere = () => {
-    const geometry = new THREE.SphereGeometry(0.5, surfaceQuality, surfaceQuality/2);
-    const material = createRealisticMaterial(0xff4a4a, selectedMaterial);
+    const geometry = new THREE.SphereGeometry(0.5, 32, 16);
+    const material = createTinkercadMaterial(0xff4a4a, shapeMode === 'hole');
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = 'Sphere';
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.materialType = selectedMaterial;
+    mesh.userData.isHole = shapeMode === 'hole';
+    mesh.position.set(0, 0.5, 0);
     addObject(mesh);
   };
 
   const createCylinder = () => {
-    const geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, surfaceQuality);
-    const material = createRealisticMaterial(0x4aff4a, selectedMaterial);
+    const geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
+    const material = createTinkercadMaterial(0x4aff4a, shapeMode === 'hole');
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = 'Cylinder';
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.materialType = selectedMaterial;
+    mesh.userData.isHole = shapeMode === 'hole';
+    mesh.position.set(0, 0.5, 0);
     addObject(mesh);
   };
 
   const createCone = () => {
-    const geometry = new THREE.ConeGeometry(0.5, 1, surfaceQuality);
-    const material = createRealisticMaterial(0xffaa00, selectedMaterial);
+    const geometry = new THREE.ConeGeometry(0.5, 1, 32);
+    const material = createTinkercadMaterial(0xffaa00, shapeMode === 'hole');
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = 'Cone';
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.materialType = selectedMaterial;
+    mesh.userData.isHole = shapeMode === 'hole';
+    mesh.position.set(0, 0.5, 0);
     addObject(mesh);
   };
 
   const createTorus = () => {
-    const geometry = new THREE.TorusGeometry(0.5, 0.2, surfaceQuality/2, surfaceQuality);
-    const material = createRealisticMaterial(0xff00ff, selectedMaterial);
+    const geometry = new THREE.TorusGeometry(0.5, 0.2, 16, 32);
+    const material = createTinkercadMaterial(0xff00ff, shapeMode === 'hole');
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = 'Torus';
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.materialType = selectedMaterial;
+    mesh.userData.isHole = shapeMode === 'hole';
+    mesh.position.set(0, 0.5, 0);
     addObject(mesh);
   };
 
-  const createTetrahedron = () => {
-    const geometry = new THREE.TetrahedronGeometry(0.7, 0);
-    const material = createRealisticMaterial(0x00ffff, selectedMaterial);
+  // Enhanced text creation
+  const createText = () => {
+    if (!textInput.trim()) return;
+    
+    // Create a simple extruded text geometry
+    const textWidth = textInput.length * 0.3;
+    const textHeight = 0.5;
+    const textDepth = holeDepth;
+    
+    const geometry = new THREE.BoxGeometry(textWidth, textHeight, textDepth);
+    const material = createTinkercadMaterial(0x4444ff, shapeMode === 'hole');
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.name = 'Tetrahedron';
+    
+    mesh.name = `Text: ${textInput}`;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.materialType = selectedMaterial;
+    mesh.userData.isHole = shapeMode === 'hole';
+    mesh.userData.isText = true;
+    mesh.userData.text = textInput;
+    mesh.position.set(0, textHeight / 2, 0);
+    
     addObject(mesh);
   };
 
-  // Shape creation functions that work in both modes
+  // Shape creation functions
   const createShape = (shapeType: string, name: string) => {
     const geometry = createShapeGeometry(shapeType);
+    const material = createTinkercadMaterial(getShapeColor(shapeType), shapeMode === 'hole');
+    const mesh = new THREE.Mesh(geometry, material);
     
-    if (shapeMode === 'solid') {
-      addShapeAsObject(geometry, name);
-    } else if (shapeMode === 'hole' && selectedObject) {
-      addHoleToObject(geometry);
-    }
+    mesh.name = name;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.isHole = shapeMode === 'hole';
+    mesh.position.set(0, holeDepth / 2, 0);
+    
+    addObject(mesh);
   };
 
   const createShapeGeometry = (shapeType: string): THREE.BufferGeometry => {
     const size = holeSize;
-    const segments = Math.max(8, surfaceQuality / 4);
+    const segments = 32;
     
     switch (shapeType) {
       case 'circle':
@@ -219,162 +254,23 @@ export default function Sidebar() {
         });
       }
       
-      case 'hexagon': {
-        const shape = new THREE.Shape();
-        for (let i = 0; i < 6; i++) {
-          const angle = (i / 6) * Math.PI * 2;
-          const x = Math.cos(angle) * size;
-          const y = Math.sin(angle) * size;
-          
-          if (i === 0) shape.moveTo(x, y);
-          else shape.lineTo(x, y);
-        }
-        shape.closePath();
-        
-        return new THREE.ExtrudeGeometry(shape, { 
-          depth: holeDepth, 
-          bevelEnabled: false,
-          curveSegments: segments
-        });
-      }
-      
-      case 'diamond': {
-        const shape = new THREE.Shape();
-        shape.moveTo(0, size);
-        shape.lineTo(size * 0.7, 0);
-        shape.lineTo(0, -size);
-        shape.lineTo(-size * 0.7, 0);
-        shape.closePath();
-        
-        return new THREE.ExtrudeGeometry(shape, { 
-          depth: holeDepth, 
-          bevelEnabled: true,
-          bevelThickness: 0.02,
-          bevelSize: 0.02,
-          bevelSegments: 4,
-          curveSegments: segments
-        });
-      }
-      
-      case 'octagon': {
-        const shape = new THREE.Shape();
-        for (let i = 0; i < 8; i++) {
-          const angle = (i / 8) * Math.PI * 2;
-          const x = Math.cos(angle) * size;
-          const y = Math.sin(angle) * size;
-          
-          if (i === 0) shape.moveTo(x, y);
-          else shape.lineTo(x, y);
-        }
-        shape.closePath();
-        
-        return new THREE.ExtrudeGeometry(shape, { 
-          depth: holeDepth, 
-          bevelEnabled: false,
-          curveSegments: segments
-        });
-      }
-      
-      case 'plus': {
-        const shape = new THREE.Shape();
-        const thickness = size * 0.3;
-        shape.moveTo(-thickness, size);
-        shape.lineTo(thickness, size);
-        shape.lineTo(thickness, thickness);
-        shape.lineTo(size, thickness);
-        shape.lineTo(size, -thickness);
-        shape.lineTo(thickness, -thickness);
-        shape.lineTo(thickness, -size);
-        shape.lineTo(-thickness, -size);
-        shape.lineTo(-thickness, -thickness);
-        shape.lineTo(-size, -thickness);
-        shape.lineTo(-size, thickness);
-        shape.lineTo(-thickness, thickness);
-        shape.closePath();
-        
-        return new THREE.ExtrudeGeometry(shape, { 
-          depth: holeDepth, 
-          bevelEnabled: false,
-          curveSegments: segments
-        });
-      }
-      
-      case 'lightning': {
-        const shape = new THREE.Shape();
-        shape.moveTo(-size * 0.2, size);
-        shape.lineTo(size * 0.3, size * 0.2);
-        shape.lineTo(size * 0.1, size * 0.2);
-        shape.lineTo(size * 0.5, -size);
-        shape.lineTo(-size * 0.1, -size * 0.3);
-        shape.lineTo(size * 0.1, -size * 0.3);
-        shape.lineTo(-size * 0.4, size);
-        shape.closePath();
-        
-        return new THREE.ExtrudeGeometry(shape, { 
-          depth: holeDepth, 
-          bevelEnabled: false,
-          curveSegments: segments
-        });
-      }
-      
-      case 'crescent': {
-        const shape = new THREE.Shape();
-        // Outer circle
-        for (let i = 0; i <= segments; i++) {
-          const angle = (i / segments) * Math.PI * 2;
-          const x = Math.cos(angle) * size;
-          const y = Math.sin(angle) * size;
-          
-          if (i === 0) shape.moveTo(x, y);
-          else shape.lineTo(x, y);
-        }
-        
-        // Inner circle (hole)
-        const hole = new THREE.Path();
-        const offset = size * 0.3;
-        for (let i = 0; i <= segments; i++) {
-          const angle = (i / segments) * Math.PI * 2;
-          const x = Math.cos(angle) * size * 0.7 + offset;
-          const y = Math.sin(angle) * size * 0.7;
-          
-          if (i === 0) hole.moveTo(x, y);
-          else hole.lineTo(x, y);
-        }
-        shape.holes.push(hole);
-        
-        return new THREE.ExtrudeGeometry(shape, { 
-          depth: holeDepth, 
-          bevelEnabled: false,
-          curveSegments: segments
-        });
-      }
-      
-      case 'text': {
-        if (!textInput.trim()) return new THREE.BoxGeometry(0.1, 0.1, 0.1);
-        
-        const textWidth = textInput.length * size * 0.3;
-        const textHeight = size * 0.5;
-        
-        const shape = new THREE.Shape();
-        shape.moveTo(-textWidth/2, -textHeight/2);
-        shape.lineTo(textWidth/2, -textHeight/2);
-        shape.lineTo(textWidth/2, textHeight/2);
-        shape.lineTo(-textWidth/2, textHeight/2);
-        shape.closePath();
-        
-        return new THREE.ExtrudeGeometry(shape, { 
-          depth: holeDepth, 
-          bevelEnabled: true,
-          bevelThickness: 0.02,
-          bevelSize: 0.02,
-          bevelSegments: 2,
-          curveSegments: segments
-        });
-      }
-      
       default:
         return new THREE.CylinderGeometry(size, size, holeDepth, segments);
     }
+  };
+
+  const getShapeColor = (shapeType: string): number => {
+    const colors: Record<string, number> = {
+      circle: 0x4a9eff,
+      square: 0x4aff4a,
+      triangle: 0xffaa00,
+      star: 0xff00ff,
+      heart: 0xff4a4a,
+      hexagon: 0x00ffff,
+      diamond: 0xffa500,
+      octagon: 0x9370db,
+    };
+    return colors[shapeType] || 0x888888;
   };
 
   const primitives = [
@@ -383,220 +279,175 @@ export default function Sidebar() {
     { icon: Cylinder, name: 'Cylinder', action: createCylinder, color: 'green' },
     { icon: Cone, name: 'Cone', action: createCone, color: 'orange' },
     { icon: Circle, name: 'Torus', action: createTorus, color: 'pink' },
-    { icon: Triangle, name: 'Tetrahedron', action: createTetrahedron, color: 'cyan' },
   ];
 
   const shapes = [
-    { icon: Circle, name: 'Circle', type: 'circle', color: 'blue' },
-    { icon: Square, name: 'Square', type: 'square', color: 'green' },
-    { icon: Triangle, name: 'Triangle', type: 'triangle', color: 'yellow' },
-    { icon: Star, name: 'Star', type: 'star', color: 'purple' },
-    { icon: Heart, name: 'Heart', type: 'heart', color: 'red' },
-    { icon: Hexagon, name: 'Hexagon', type: 'hexagon', color: 'indigo' },
-    { icon: Diamond, name: 'Diamond', type: 'diamond', color: 'pink' },
-    { icon: Octagon, name: 'Octagon', type: 'octagon', color: 'teal' },
-    { icon: Plus, name: 'Plus', type: 'plus', color: 'emerald' },
-    { icon: Zap, name: 'Lightning', type: 'lightning', color: 'yellow' },
-    { icon: Moon, name: 'Crescent', type: 'crescent', color: 'slate' },
-    { icon: Sun, name: 'Sun', type: 'sun', color: 'orange' },
-    { icon: Flower, name: 'Flower', type: 'flower', color: 'pink' },
-    { icon: Crown, name: 'Crown', type: 'crown', color: 'yellow' },
-    { icon: Shield, name: 'Shield', type: 'shield', color: 'blue' },
-    { icon: Home, name: 'House', type: 'house', color: 'blue' },
-    { icon: Car, name: 'Car', type: 'car', color: 'red' },
-    { icon: Plane, name: 'Plane', type: 'plane', color: 'blue' },
-    { icon: Key, name: 'Key', type: 'key', color: 'yellow' },
-    { icon: Leaf, name: 'Leaf', type: 'leaf', color: 'green' },
-    { icon: Fish, name: 'Fish', type: 'fish', color: 'blue' },
-    { icon: Smile, name: 'Smiley', type: 'smiley', color: 'yellow' },
-    { icon: Target, name: 'Target', type: 'target', color: 'red' },
-    { icon: Phone, name: 'Phone', type: 'phone', color: 'gray' },
+    { icon: Circle, name: 'Circle', type: 'circle' },
+    { icon: Square, name: 'Square', type: 'square' },
+    { icon: Triangle, name: 'Triangle', type: 'triangle' },
+    { icon: Star, name: 'Star', type: 'star' },
+    { icon: Heart, name: 'Heart', type: 'heart' },
+    { icon: Hexagon, name: 'Hexagon', type: 'hexagon' },
+    { icon: Diamond, name: 'Diamond', type: 'diamond' },
+    { icon: Octagon, name: 'Octagon', type: 'octagon' },
   ];
-
-  const materials = [
-    { name: 'Plastic', type: 'plastic' as const, icon: Palette2, color: 'blue', description: 'Smooth, colorful finish' },
-    { name: 'Metal', type: 'metal' as const, icon: Wrench, color: 'gray', description: 'Reflective, industrial' },
-    { name: 'Ceramic', type: 'ceramic' as const, icon: Crown, color: 'white', description: 'Glossy, premium feel' },
-    { name: 'Wood', type: 'wood' as const, icon: Leaf, color: 'amber', description: 'Natural, organic texture' },
-  ];
-
-  const canUseShapes = shapeMode === 'solid' || (shapeMode === 'hole' && selectedObject);
 
   return (
-    <div className="absolute right-6 top-1/2 -translate-y-1/2 z-10">
-      <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-700/50 p-5 w-80 max-h-[90vh] overflow-y-auto">
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10">
+      <div className="bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200 p-4 w-72 max-h-[85vh] overflow-y-auto">
         
-        {/* Mode Indicator */}
-        <div className={`mb-6 p-4 rounded-xl border-2 ${
+        {/* Mode Indicator - Tinkercad style */}
+        <div className={`mb-4 p-3 rounded-lg border-2 ${
           shapeMode === 'solid' 
-            ? 'bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30' 
-            : 'bg-gradient-to-r from-red-500/20 to-rose-500/20 border-red-500/30'
+            ? 'bg-orange-50 border-orange-200' 
+            : 'bg-red-50 border-red-200'
         }`}>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {shapeMode === 'solid' ? (
-              <Layers3 className="w-6 h-6 text-orange-400" />
+              <Layers3 className="w-5 h-5 text-orange-600" />
             ) : (
-              <Minus className="w-6 h-6 text-red-400" />
+              <Minus className="w-5 h-5 text-red-600" />
             )}
             <div>
-              <h3 className={`font-bold ${
-                shapeMode === 'solid' ? 'text-orange-400' : 'text-red-400'
+              <h3 className={`font-semibold text-sm ${
+                shapeMode === 'solid' ? 'text-orange-800' : 'text-red-800'
               }`}>
                 {shapeMode === 'solid' ? 'Solid Mode' : 'Hole Mode'}
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-gray-600">
                 {shapeMode === 'solid' 
                   ? 'Create new objects' 
-                  : selectedObject 
-                    ? 'Cut holes in selected object' 
-                    : 'Select an object first'
+                  : 'Objects will appear red and transparent'
                 }
               </p>
             </div>
           </div>
         </div>
 
-        {/* Material Selection */}
-        <div className="mb-6">
-          <button
-            onClick={() => toggleSection('materials')}
-            className="flex items-center justify-between w-full p-3 rounded-xl hover:bg-slate-700/30 transition-all duration-300 group"
-          >
-            <div className="flex items-center gap-3">
-              <Settings className="w-5 h-5 text-purple-400" />
-              <span className="font-bold text-slate-200">Material & Quality</span>
-            </div>
-            {expandedSections.materials ? (
-              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-200 transition-colors" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-200 transition-colors" />
-            )}
-          </button>
-          
-          {expandedSections.materials && (
-            <div className="mt-4 space-y-4">
-              {/* Material Selection */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-3">Material Type</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {materials.map((material) => (
-                    <button
-                      key={material.type}
-                      onClick={() => setSelectedMaterial(material.type)}
-                      className={`p-3 rounded-lg border transition-all duration-300 ${
-                        selectedMaterial === material.type
-                          ? `bg-${material.color}-500/20 border-${material.color}-500/50 text-${material.color}-400`
-                          : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-700/50'
-                      }`}
-                    >
-                      <material.icon className="w-5 h-5 mx-auto mb-1" />
-                      <div className="text-xs font-medium">{material.name}</div>
-                      <div className="text-xs opacity-70">{material.description}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Surface Quality */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Surface Quality: {surfaceQuality} segments
-                </label>
-                <input
-                  type="range"
-                  min="8"
-                  max="64"
-                  step="4"
-                  value={surfaceQuality}
-                  onChange={(e) => setSurfaceQuality(parseInt(e.target.value))}
-                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-modern"
-                />
-                <div className="flex justify-between text-xs text-slate-500 mt-1">
-                  <span>Low</span>
-                  <span>High</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Primitives Section */}
-        <div className="mb-6">
+        <div className="mb-4">
           <button
             onClick={() => toggleSection('primitives')}
-            className="flex items-center justify-between w-full p-3 rounded-xl hover:bg-slate-700/30 transition-all duration-300 group"
+            className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-50 transition-all duration-200"
           >
-            <div className="flex items-center gap-3">
-              <Sparkles className="w-5 h-5 text-blue-400" />
-              <span className="font-bold text-slate-200">3D Primitives</span>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-600" />
+              <span className="font-medium text-gray-800">Basic Shapes</span>
             </div>
             {expandedSections.primitives ? (
-              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-200 transition-colors" />
+              <ChevronDown className="w-4 h-4 text-gray-500" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-200 transition-colors" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             )}
           </button>
           
           {expandedSections.primitives && (
-            <div className="grid grid-cols-2 gap-3 mt-4">
+            <div className="grid grid-cols-2 gap-2 mt-3">
               {primitives.map((primitive, index) => (
                 <button
                   key={index}
                   onClick={primitive.action}
-                  className={`p-4 rounded-xl bg-slate-800/50 hover:bg-gradient-to-br hover:from-${primitive.color}-500/20 hover:to-${primitive.color}-600/20 border border-slate-700/50 hover:border-${primitive.color}-500/30 transition-all duration-300 group flex flex-col items-center gap-2 hover:scale-105 hover:shadow-lg hover:shadow-${primitive.color}-500/20`}
-                  title={`Add ${primitive.name} (${selectedMaterial})`}
+                  className={`p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 flex flex-col items-center gap-2 ${
+                    shapeMode === 'hole' ? 'bg-red-50 border-red-200' : 'bg-white'
+                  }`}
+                  title={`Add ${primitive.name}`}
                 >
-                  <primitive.icon className={`w-6 h-6 text-slate-400 group-hover:text-${primitive.color}-400 transition-colors`} />
-                  <span className="text-sm font-medium text-slate-300 group-hover:text-white">{primitive.name}</span>
-                  <span className="text-xs text-slate-500 capitalize">{selectedMaterial}</span>
+                  <primitive.icon className={`w-6 h-6 ${
+                    shapeMode === 'hole' ? 'text-red-600' : 'text-gray-600'
+                  }`} />
+                  <span className="text-xs font-medium text-gray-700">{primitive.name}</span>
                 </button>
               ))}
             </div>
           )}
         </div>
 
+        {/* Text Section */}
+        <div className="mb-4">
+          <button
+            onClick={() => toggleSection('text')}
+            className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-50 transition-all duration-200"
+          >
+            <div className="flex items-center gap-2">
+              <Type className="w-4 h-4 text-purple-600" />
+              <span className="font-medium text-gray-800">Text</span>
+            </div>
+            {expandedSections.text ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+          </button>
+          
+          {expandedSections.text && (
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Text Content</label>
+                <input
+                  type="text"
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Enter text..."
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <button
+                onClick={createText}
+                className={`w-full p-3 rounded-lg border transition-all duration-200 flex items-center justify-center gap-2 ${
+                  shapeMode === 'hole' 
+                    ? 'bg-red-50 border-red-200 hover:bg-red-100 text-red-700' 
+                    : 'bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700'
+                }`}
+                disabled={!textInput.trim()}
+              >
+                <Type className="w-4 h-4" />
+                <span className="text-sm font-medium">Add Text</span>
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Shapes Section */}
-        <div>
+        <div className="mb-4">
           <button
             onClick={() => toggleSection('shapes')}
-            className="flex items-center justify-between w-full p-3 rounded-xl hover:bg-slate-700/30 transition-all duration-300 group"
+            className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-50 transition-all duration-200"
           >
-            <div className="flex items-center gap-3">
-              {shapeMode === 'solid' ? (
-                <Layers3 className="w-5 h-5 text-orange-400" />
-              ) : (
-                <Minus className="w-5 h-5 text-red-400" />
-              )}
-              <span className="font-bold text-slate-200">
-                {shapeMode === 'solid' ? 'Shape Objects' : 'Shape Holes'}
-              </span>
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-green-600" />
+              <span className="font-medium text-gray-800">2D Shapes</span>
             </div>
             {expandedSections.shapes ? (
-              <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-slate-200 transition-colors" />
+              <ChevronDown className="w-4 h-4 text-gray-500" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-200 transition-colors" />
+              <ChevronRight className="w-4 h-4 text-gray-500" />
             )}
           </button>
           
           {expandedSections.shapes && (
-            <div className="mt-4">
+            <div className="mt-3">
               {/* Shape Controls */}
-              <div className="mb-6 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Size: {holeSize.toFixed(2)}</label>
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Size: {holeSize.toFixed(1)}
+                  </label>
                   <input
                     type="range"
-                    min="0.1"
-                    max="1.5"
-                    step="0.05"
+                    min="0.2"
+                    max="2"
+                    step="0.1"
                     value={holeSize}
                     onChange={(e) => setHoleSize(parseFloat(e.target.value))}
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-modern"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                   />
                 </div>
                 
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Depth: {holeDepth.toFixed(1)}</label>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Height: {holeDepth.toFixed(1)}
+                  </label>
                   <input
                     type="range"
                     min="0.1"
@@ -604,30 +455,8 @@ export default function Sidebar() {
                     step="0.1"
                     value={holeDepth}
                     onChange={(e) => setHoleDepth(parseFloat(e.target.value))}
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-modern"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                   />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Text Content</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={textInput}
-                      onChange={(e) => setTextInput(e.target.value)}
-                      placeholder="Enter text..."
-                      className="flex-1 px-3 py-2 text-sm bg-slate-700/50 border border-slate-600/50 rounded-lg focus:ring-2 focus:ring-blue-500/50 focus:border-transparent text-white placeholder-slate-400"
-                    />
-                    <button
-                      onClick={() => createShape('text', 'Text')}
-                      className={`px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 flex items-center gap-2 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30 ${
-                        !canUseShapes ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                      disabled={!canUseShapes}
-                    >
-                      <Type className="w-4 h-4" />
-                    </button>
-                  </div>
                 </div>
               </div>
               
@@ -637,27 +466,20 @@ export default function Sidebar() {
                   <button
                     key={index}
                     onClick={() => createShape(shape.type, shape.name)}
-                    className={`p-3 rounded-lg bg-slate-800/50 hover:bg-gradient-to-br hover:from-${shape.color}-500/20 hover:to-${shape.color}-600/20 border border-slate-700/50 hover:border-${shape.color}-500/30 transition-all duration-300 group flex flex-col items-center gap-1 hover:scale-105 hover:shadow-lg hover:shadow-${shape.color}-500/20 ${
-                      !canUseShapes ? 'opacity-50 cursor-not-allowed' : ''
+                    className={`p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 flex flex-col items-center gap-1 ${
+                      shapeMode === 'hole' ? 'bg-red-50 border-red-200' : 'bg-white'
                     }`}
-                    title={`${shape.name} ${shapeMode === 'solid' ? 'Object' : 'Hole'} (Quality: ${surfaceQuality})`}
-                    disabled={!canUseShapes}
+                    title={`${shape.name} ${shapeMode === 'solid' ? 'Object' : 'Hole'}`}
                   >
-                    <shape.icon className={`w-5 h-5 text-slate-400 group-hover:text-${shape.color}-400 transition-colors`} />
-                    <span className="text-xs font-medium text-slate-400 group-hover:text-white text-center leading-tight">
+                    <shape.icon className={`w-5 h-5 ${
+                      shapeMode === 'hole' ? 'text-red-600' : 'text-gray-600'
+                    }`} />
+                    <span className="text-xs font-medium text-gray-700 text-center">
                       {shape.name}
                     </span>
                   </button>
                 ))}
               </div>
-              
-              {shapeMode === 'hole' && !selectedObject && (
-                <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                  <p className="text-sm text-yellow-400 text-center">
-                    Select an object first to cut holes
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>
