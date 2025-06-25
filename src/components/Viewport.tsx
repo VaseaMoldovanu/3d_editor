@@ -336,6 +336,7 @@ function Scene() {
       
       {selectedObject && (
         <TransformControls 
+          key={selectedObject.uuid}
           object={selectedObject} 
           mode={mode}
           size={1}
