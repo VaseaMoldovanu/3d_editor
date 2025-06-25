@@ -9,7 +9,6 @@ import {
   Lightformer,
   AccumulativeShadows,
   RandomizedLight,
-  BakeShadows,
   SoftShadows,
   useHelper
 } from '@react-three/drei';
@@ -402,7 +401,6 @@ export default function Viewport() {
           antialias: true, 
           alpha: false,
           powerPreference: "high-performance",
-          shadowMap: true,
           toneMapping: THREE.ACESFilmicToneMapping,
           toneMappingExposure: 1.0,
           outputColorSpace: THREE.SRGBColorSpace
@@ -411,7 +409,6 @@ export default function Viewport() {
         performance={{ min: 0.5 }}
       >
         <Scene />
-        <BakeShadows />
       </Canvas>
     </div>
   );
