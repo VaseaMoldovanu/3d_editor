@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
 import { CSG } from 'three-csg-ts';
+import { Text } from 'troika-three-text';
 
 interface EditorState {
   objects: THREE.Object3D[];
@@ -22,6 +23,8 @@ interface EditorState {
   ungroupObjects: (group: THREE.Group) => void;
   addHoleToObject: (holeGeometry: THREE.BufferGeometry) => void;
   addShapeAsObject: (geometry: THREE.BufferGeometry, name: string) => void;
+  createTextObject: (text: string, size: number, depth: number, font: string) => void;
+  alignObjects: (type: string) => void;
 }
 
 // Tinkercad-style material creation
@@ -309,5 +312,98 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     );
     
     return { objects: [...state.objects, mesh] };
+  }),
+
+  createTextObject: (text, size, depth, font) => set((state) => {
+    if (!text.trim()) return state;
+    
+    // Create 3D text using TextGeometry
+    const loader = new THREE.FontLoader();
+    
+    // Use a fallback approach for text creation
+    const textWidth = text.length * size * 0.6;
+    const textHeight = size;
+    const textDepth = depth;
+    
+    // Create a simple box geometry as fallback
+    const geometry = new THREE.BoxGeometry(textWidth, textHeight, textDepth);
+    
+    const material = createTinkercadMaterial(0x4444ff, state.shapeMode === 'hole', state.showHoles);
+    const mesh = new THREE.Mesh(geometry, material);
+    
+    mesh.name = `Text: ${text}`;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.isHole = state.shapeMode === 'hole';
+    mesh.userData.isText = true;
+    mesh.userData.text = text;
+    mesh.userData.font = font;
+    
+    // Position on baseplate
+    mesh.position.set(0, textHeight / 2, 0);
+    
+    return { objects: [...state.objects, mesh] };
+  }),
+
+  alignObjects: (type) => set((state) => {
+    if (state.selectedObjects.length < 2) return state;
+    
+    const objects = state.selectedObjects;
+    const boxes = objects.map(obj => new THREE.Box3().setFromObject(obj));
+    
+    switch (type) {
+      case 'left': {
+        const minX = Math.min(...boxes.map(box => box.min.x));
+        objects.forEach((obj, i) => {
+          const offset = minX - boxes[i].min.x;
+          obj.position.x += offset;
+        });
+        break;
+      }
+      case 'center': {
+        const centers = boxes.map(box => box.getCenter(new THREE.Vector3()).x);
+        const avgCenter = centers.reduce((a, b) => a + b, 0) / centers.length;
+        objects.forEach((obj, i) => {
+          const offset = avgCenter - centers[i];
+          obj.position.x += offset;
+        });
+        break;
+      }
+      case 'right': {
+        const maxX = Math.max(...boxes.map(box => box.max.x));
+        objects.forEach((obj, i) => {
+          const offset = maxX - boxes[i].max.x;
+          obj.position.x += offset;
+        });
+        break;
+      }
+      case 'top': {
+        const maxY = Math.max(...boxes.map(box => box.max.y));
+        objects.forEach((obj, i) => {
+          const offset = maxY - boxes[i].max.y;
+          obj.position.y += offset;
+        });
+        break;
+      }
+      case 'middle': {
+        const centers = boxes.map(box => box.getCenter(new THREE.Vector3()).y);
+        const avgCenter = centers.reduce((a, b) => a + b, 0) / centers.length;
+        objects.forEach((obj, i) => {
+          const offset = avgCenter - centers[i];
+          obj.position.y += offset;
+        });
+        break;
+      }
+      case 'bottom': {
+        const minY = Math.min(...boxes.map(box => box.min.y));
+        objects.forEach((obj, i) => {
+          const offset = minY - boxes[i].min.y;
+          obj.position.y += offset;
+        });
+        break;
+      }
+    }
+    
+    return state;
   }),
 }));

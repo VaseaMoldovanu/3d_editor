@@ -15,8 +15,8 @@ import {
 import { useEditorStore } from '../store';
 import * as THREE from 'three';
 
-// Realistic ground with subtle imperfections
-function RealisticGround() {
+// Tinkercad-style baseplate
+function TinkercadBaseplate() {
   const meshRef = useRef<THREE.Mesh>(null);
   
   useFrame((state) => {
@@ -26,11 +26,17 @@ function RealisticGround() {
     }
   });
 
-  const groundMaterial = new THREE.ShaderMaterial({
+  const baseplateSize = 20;
+  const gridSize = 1;
+  
+  const baseplateGeometry = new THREE.PlaneGeometry(baseplateSize, baseplateSize);
+  const baseplateMaterial = new THREE.ShaderMaterial({
     uniforms: {
       time: { value: 0 },
-      color1: { value: new THREE.Color('#1a1a2e') },
-      color2: { value: new THREE.Color('#16213e') },
+      gridSize: { value: gridSize },
+      baseColor: { value: new THREE.Color('#f8f9fa') },
+      gridColor: { value: new THREE.Color('#e9ecef') },
+      size: { value: baseplateSize },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -41,27 +47,28 @@ function RealisticGround() {
         vUv = uv;
         vPosition = position;
         
-        // Add subtle height variation
         vec3 pos = position;
-        pos.y += sin(pos.x * 0.5 + time) * 0.01 + cos(pos.z * 0.3 + time) * 0.01;
-        
         gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
       }
     `,
     fragmentShader: `
-      uniform vec3 color1;
-      uniform vec3 color2;
+      uniform vec3 baseColor;
+      uniform vec3 gridColor;
+      uniform float gridSize;
+      uniform float size;
       varying vec2 vUv;
       varying vec3 vPosition;
       
       void main() {
-        // Create subtle grid pattern
-        vec2 grid = abs(fract(vPosition.xz * 2.0) - 0.5) / fwidth(vPosition.xz * 2.0);
+        vec2 grid = abs(fract((vUv - 0.5) * size / gridSize) - 0.5) / fwidth((vUv - 0.5) * size / gridSize);
         float line = min(grid.x, grid.y);
         
-        // Mix colors based on position and grid
-        vec3 color = mix(color1, color2, smoothstep(0.0, 1.0, length(vPosition.xz) * 0.1));
-        color = mix(color, color1 * 1.2, 1.0 - smoothstep(0.0, 2.0, line));
+        // Create grid pattern like Tinkercad
+        vec3 color = mix(gridColor, baseColor, smoothstep(0.0, 1.0, line));
+        
+        // Add subtle radial gradient
+        float dist = length(vUv - 0.5);
+        color = mix(color, color * 0.95, smoothstep(0.3, 0.7, dist));
         
         gl_FragColor = vec4(color, 1.0);
       }
@@ -73,11 +80,10 @@ function RealisticGround() {
       ref={meshRef}
       position={[0, -0.01, 0]} 
       rotation={[-Math.PI / 2, 0, 0]} 
-      scale={[100, 100, 1]} 
       receiveShadow
     >
-      <planeGeometry args={[1, 1, 64, 64]} />
-      <primitive object={groundMaterial} />
+      <primitive object={baseplateGeometry} />
+      <primitive object={baseplateMaterial} />
     </mesh>
   );
 }
@@ -85,8 +91,6 @@ function RealisticGround() {
 // Enhanced lighting setup
 function RealisticLighting() {
   const directionalRef = useRef<THREE.DirectionalLight>(null);
-  
-  // useHelper(directionalRef, THREE.DirectionalLightHelper, 1, 'red');
 
   return (
     <>
@@ -143,67 +147,16 @@ function RealisticLighting() {
   );
 }
 
-// Particle system for atmosphere
-function AtmosphericParticles() {
-  const particlesRef = useRef<THREE.Points>(null);
-  const particleCount = 1000;
-  
-  const positions = new Float32Array(particleCount * 3);
-  const velocities = new Float32Array(particleCount * 3);
-  
-  for (let i = 0; i < particleCount; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 50;
-    positions[i * 3 + 1] = Math.random() * 30;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
-    
-    velocities[i * 3] = (Math.random() - 0.5) * 0.02;
-    velocities[i * 3 + 1] = -Math.random() * 0.01;
-    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.02;
-  }
-  
-  useFrame(() => {
-    if (particlesRef.current) {
-      const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
-      
-      for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] += velocities[i * 3];
-        positions[i * 3 + 1] += velocities[i * 3 + 1];
-        positions[i * 3 + 2] += velocities[i * 3 + 2];
-        
-        // Reset particles that fall too low
-        if (positions[i * 3 + 1] < -5) {
-          positions[i * 3 + 1] = 30;
-        }
-      }
-      
-      particlesRef.current.geometry.attributes.position.needsUpdate = true;
-    }
-  });
-  
-  return (
-    <points ref={particlesRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={particleCount}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.02}
-        color="#ffffff"
-        transparent
-        opacity={0.6}
-        sizeAttenuation
-        blending={THREE.AdditiveBlending}
-      />
-    </points>
-  );
-}
-
 function Scene() {
-  const { objects, selectedObject, selectedObjects, mode, setSelectedObject, toggleObjectSelection, clearSelection } = useEditorStore();
+  const { 
+    objects, 
+    selectedObject, 
+    selectedObjects, 
+    mode, 
+    setSelectedObject, 
+    toggleObjectSelection, 
+    clearSelection 
+  } = useEditorStore();
   const { camera } = useThree();
 
   // Enhanced camera controls
@@ -215,7 +168,7 @@ function Scene() {
   const handleObjectClick = (object: THREE.Object3D, event: any) => {
     event.stopPropagation();
     
-    if (event.shiftKey) {
+    if (event.ctrlKey || event.metaKey) {
       toggleObjectSelection(object);
     } else {
       setSelectedObject(object);
@@ -246,7 +199,6 @@ function Scene() {
       </Environment>
       
       <RealisticLighting />
-      <AtmosphericParticles />
       
       {/* Soft shadows for realism */}
       <SoftShadows frustum={3.75} size={0.005} near={9.5} samples={17} rings={11} />
@@ -369,7 +321,7 @@ function Scene() {
         autoRotateSpeed={0.5}
       />
       
-      <RealisticGround />
+      <TinkercadBaseplate />
       
       {/* Invisible interaction plane */}
       <mesh 
@@ -392,7 +344,7 @@ export default function Viewport() {
       {/* Performance monitor */}
       <div className="absolute top-4 left-4 z-20 bg-black/50 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-green-400 font-mono">
         <div>FPS: 60</div>
-        <div>Triangles: {/* Dynamic count would go here */}</div>
+        <div>Multi-select: Ctrl+Click</div>
       </div>
       
       <Canvas

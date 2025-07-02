@@ -19,7 +19,13 @@ import {
   Home,
   Upload,
   Download,
-  FileText
+  FileText,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  AlignVerticalJustifyCenter,
+  AlignHorizontalJustifyCenter
 } from 'lucide-react';
 import { useEditorStore } from '../store';
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter';
@@ -43,11 +49,13 @@ export default function Toolbar() {
     ungroupObjects,
     showHoles,
     setShowHoles,
-    addObject
+    addObject,
+    alignObjects
   } = useEditorStore();
 
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showAlignMenu, setShowAlignMenu] = useState(false);
   const [wireframeMode, setWireframeMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -210,6 +218,13 @@ export default function Toolbar() {
     }
   };
 
+  const handleAlign = (type: string) => {
+    if (selectedObjects.length > 1) {
+      alignObjects(type);
+    }
+    setShowAlignMenu(false);
+  };
+
   const toggleWireframe = () => {
     setWireframeMode(!wireframeMode);
     objects.forEach(obj => {
@@ -228,13 +243,10 @@ export default function Toolbar() {
     });
   };
 
-  const toggleHoleVisibility = () => {
-    setShowHoles(!showHoles);
-  };
-
   const canGroup = selectedObjects.length > 1;
   const canUngroup = selectedObject && selectedObject.userData.isGroup;
   const hasSelection = selectedObjects.length > 0;
+  const canAlign = selectedObjects.length > 1;
 
   return (
     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
@@ -343,14 +355,14 @@ export default function Toolbar() {
         {/* Divider */}
         <div className="w-px h-6 bg-gray-300" />
         
-        {/* Shape Mode Toggle */}
-        <div className="flex gap-1">
+        {/* Shape Mode Toggle - Tinkercad Style */}
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => setShapeMode('solid')}
-            className={`px-3 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
+            className={`px-3 py-2 rounded-md transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
               shapeMode === 'solid' 
                 ? 'bg-orange-500 text-white shadow-md' 
-                : 'hover:bg-gray-100 text-gray-600'
+                : 'hover:bg-gray-200 text-gray-600'
             }`}
             title="Solid Mode"
           >
@@ -359,10 +371,10 @@ export default function Toolbar() {
           </button>
           <button
             onClick={() => setShapeMode('hole')}
-            className={`px-3 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
+            className={`px-3 py-2 rounded-md transition-all duration-200 flex items-center gap-2 text-sm font-medium ${
               shapeMode === 'hole' 
                 ? 'bg-red-500 text-white shadow-md' 
-                : 'hover:bg-gray-100 text-gray-600'
+                : 'hover:bg-gray-200 text-gray-600'
             }`}
             title="Hole Mode"
           >
@@ -374,20 +386,23 @@ export default function Toolbar() {
         {/* Divider */}
         <div className="w-px h-6 bg-gray-300" />
         
-        {/* Color Picker - Tinkercad style */}
+        {/* Color Picker */}
         <div className="relative">
           <button
-            onClick={toggleHoleVisibility}
+            onClick={() => setShowColorPicker(!showColorPicker)}
             className={`p-2 rounded-lg transition-all duration-200 ${
-              showHoles
-                ? 'bg-red-500 text-white shadow-md'
+              showColorPicker
+                ? 'bg-blue-500 text-white shadow-md'
                 : 'hover:bg-gray-100 text-gray-600'
             }`}
-            title="Show/Hide Holes (like Tinkercad)"
+            title="Colors & Hole Visibility"
           >
             <Palette className="w-5 h-5" />
           </button>
         </div>
+        
+        {/* Divider */}
+        <div className="w-px h-6 bg-gray-300" />
         
         {/* Edit Actions */}
         <div className="flex gap-1">
@@ -430,6 +445,70 @@ export default function Toolbar() {
             <Ungroup className="w-5 h-5" />
           </button>
           
+          {/* Alignment Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setShowAlignMenu(!showAlignMenu)}
+              className={`p-2 rounded-lg transition-all duration-200 ${
+                canAlign 
+                  ? 'hover:bg-gray-100 text-gray-600' 
+                  : 'opacity-40 cursor-not-allowed text-gray-400'
+              }`}
+              title="Align Objects"
+              disabled={!canAlign}
+            >
+              <AlignCenter className="w-5 h-5" />
+            </button>
+            
+            {showAlignMenu && canAlign && (
+              <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[180px] z-50">
+                <button
+                  onClick={() => handleAlign('left')}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <AlignLeft className="w-4 h-4" />
+                  Align Left
+                </button>
+                <button
+                  onClick={() => handleAlign('center')}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <AlignCenter className="w-4 h-4" />
+                  Align Center
+                </button>
+                <button
+                  onClick={() => handleAlign('right')}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <AlignRight className="w-4 h-4" />
+                  Align Right
+                </button>
+                <div className="border-t border-gray-200 my-1"></div>
+                <button
+                  onClick={() => handleAlign('top')}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <AlignJustify className="w-4 h-4 rotate-90" />
+                  Align Top
+                </button>
+                <button
+                  onClick={() => handleAlign('middle')}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <AlignVerticalJustifyCenter className="w-4 h-4" />
+                  Align Middle
+                </button>
+                <button
+                  onClick={() => handleAlign('bottom')}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <AlignJustify className="w-4 h-4 rotate-90" />
+                  Align Bottom
+                </button>
+              </div>
+            )}
+          </div>
+          
           <button
             onClick={handleDelete}
             className={`p-2 rounded-lg transition-all duration-200 ${
@@ -446,7 +525,7 @@ export default function Toolbar() {
       </div>
 
       {/* Tinkercad-style color palette */}
-      {showHoles && (
+      {showColorPicker && (
         <div className="bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200 p-4 max-w-md">
           <h3 className="text-sm font-semibold text-gray-800 mb-3">Object Colors</h3>
           <div className="grid grid-cols-8 gap-2 mb-4">
@@ -470,7 +549,7 @@ export default function Toolbar() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Show holes as transparent</span>
               <button 
-                onClick={toggleHoleVisibility}
+                onClick={() => setShowHoles(!showHoles)}
                 className={`w-12 h-6 rounded-full transition-all duration-200 ${
                   showHoles ? 'bg-red-500' : 'bg-gray-300'
                 }`}
@@ -499,6 +578,7 @@ export default function Toolbar() {
               {shapeMode === 'solid' ? 'Solid' : 'Hole'}
             </span></span>
             <span>Tool: <span className="font-medium text-blue-600 capitalize">{mode}</span></span>
+            <span className="text-xs text-gray-500">Hold Ctrl to multi-select</span>
           </div>
         </div>
       )}
