@@ -158,7 +158,6 @@ function Scene() {
     clearSelection 
   } = useEditorStore();
   const { camera } = useThree();
-  const transformControlsRef = useRef<any>(null);
   const orbitControlsRef = useRef<any>(null);
 
   // Enhanced camera controls
@@ -166,17 +165,6 @@ function Scene() {
     camera.position.set(12, 8, 12);
     camera.lookAt(0, 0, 0);
   }, [camera]);
-
-  // Manage TransformControls attachment
-  useEffect(() => {
-    if (transformControlsRef.current) {
-      if (selectedObject) {
-        transformControlsRef.current.attach(selectedObject);
-      } else {
-        transformControlsRef.current.detach();
-      }
-    }
-  }, [selectedObject]);
 
   const handleObjectClick = (object: THREE.Object3D, event: any) => {
     event.stopPropagation();
@@ -311,17 +299,19 @@ function Scene() {
         );
       })}
       
-      {/* TransformControls - always rendered but conditionally attached */}
-      <TransformControls 
-        ref={transformControlsRef}
-        mode={mode}
-        size={1}
-        showX={true}
-        showY={true}
-        showZ={true}
-        onMouseDown={handleTransformMouseDown}
-        onMouseUp={handleTransformMouseUp}
-      />
+      {/* TransformControls - only render when selectedObject exists */}
+      {selectedObject && (
+        <TransformControls 
+          object={selectedObject}
+          mode={mode}
+          size={1}
+          showX={true}
+          showY={true}
+          showZ={true}
+          onMouseDown={handleTransformMouseDown}
+          onMouseUp={handleTransformMouseUp}
+        />
+      )}
       
       <OrbitControls 
         ref={orbitControlsRef}
