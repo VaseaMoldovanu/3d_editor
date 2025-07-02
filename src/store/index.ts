@@ -317,32 +317,34 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   createTextObject: (text, size, depth, font) => set((state) => {
     if (!text.trim()) return state;
     
-    // Create 3D text using TextGeometry
-    const loader = new THREE.FontLoader();
+    // Create 3D text using troika-three-text
+    const textMesh = new Text();
+    textMesh.text = text;
+    textMesh.fontSize = size;
+    textMesh.font = '/fonts/helvetiker_regular.typeface.json';
+    textMesh.anchorX = 'center';
+    textMesh.anchorY = 'middle';
     
-    // Use a fallback approach for text creation
-    const textWidth = text.length * size * 0.6;
-    const textHeight = size;
-    const textDepth = depth;
-    
-    // Create a simple box geometry as fallback
-    const geometry = new THREE.BoxGeometry(textWidth, textHeight, textDepth);
-    
+    // Set material color based on shape mode
     const material = createTinkercadMaterial(0x4444ff, state.shapeMode === 'hole', state.showHoles);
-    const mesh = new THREE.Mesh(geometry, material);
+    textMesh.material = material;
     
-    mesh.name = `Text: ${text}`;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.userData.isHole = state.shapeMode === 'hole';
-    mesh.userData.isText = true;
-    mesh.userData.text = text;
-    mesh.userData.font = font;
+    // Set text properties
+    textMesh.name = `Text: ${text}`;
+    textMesh.castShadow = true;
+    textMesh.receiveShadow = true;
+    textMesh.userData.isHole = state.shapeMode === 'hole';
+    textMesh.userData.isText = true;
+    textMesh.userData.text = text;
+    textMesh.userData.font = font;
+    
+    // Sync to generate geometry
+    textMesh.sync();
     
     // Position on baseplate
-    mesh.position.set(0, textHeight / 2, 0);
+    textMesh.position.set(0, depth / 2, 0);
     
-    return { objects: [...state.objects, mesh] };
+    return { objects: [...state.objects, textMesh] };
   }),
 
   alignObjects: (type) => set((state) => {
