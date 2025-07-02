@@ -20,9 +20,9 @@ function TinkercadBaseplate() {
   const meshRef = useRef<THREE.Mesh>(null);
   
   useFrame((state) => {
-    if (meshRef.current) {
+    if (meshRef.current && meshRef.current.material && 'uniforms' in meshRef.current.material) {
       // Subtle animation for realism
-      meshRef.current.material.uniforms.time.value = state.clock.elapsedTime * 0.1;
+      (meshRef.current.material as THREE.ShaderMaterial).uniforms.time.value = state.clock.elapsedTime * 0.1;
     }
   });
 
@@ -158,12 +158,25 @@ function Scene() {
     clearSelection 
   } = useEditorStore();
   const { camera } = useThree();
+  const transformControlsRef = useRef<any>(null);
+  const orbitControlsRef = useRef<any>(null);
 
   // Enhanced camera controls
   useEffect(() => {
     camera.position.set(12, 8, 12);
     camera.lookAt(0, 0, 0);
   }, [camera]);
+
+  // Manage TransformControls attachment
+  useEffect(() => {
+    if (transformControlsRef.current) {
+      if (selectedObject) {
+        transformControlsRef.current.attach(selectedObject);
+      } else {
+        transformControlsRef.current.detach();
+      }
+    }
+  }, [selectedObject]);
 
   const handleObjectClick = (object: THREE.Object3D, event: any) => {
     event.stopPropagation();
@@ -177,6 +190,18 @@ function Scene() {
 
   const handleBackgroundClick = () => {
     clearSelection();
+  };
+
+  const handleTransformMouseDown = () => {
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.enabled = false;
+    }
+  };
+
+  const handleTransformMouseUp = () => {
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.enabled = true;
+    }
   };
 
   return (
@@ -246,7 +271,7 @@ function Scene() {
             />
             
             {/* Enhanced selection indicators with glow */}
-            {isSelected && (
+            {isSelected && object.position && object.scale && object.rotation && (
               <>
                 <mesh position={object.position} scale={object.scale} rotation={object.rotation}>
                   <boxGeometry args={[1.05, 1.05, 1.05]} />
@@ -272,7 +297,7 @@ function Scene() {
             )}
             
             {/* Pulsing animation for main selection */}
-            {isMainSelection && (
+            {isMainSelection && object.position && object.scale && object.rotation && (
               <mesh position={object.position} scale={[object.scale.x * 1.15, object.scale.y * 1.15, object.scale.z * 1.15]} rotation={object.rotation}>
                 <boxGeometry args={[1.15, 1.15, 1.15]} />
                 <meshBasicMaterial 
@@ -286,29 +311,21 @@ function Scene() {
         );
       })}
       
-      {selectedObject && (
-        <TransformControls 
-          key={selectedObject.uuid}
-          object={selectedObject} 
-          mode={mode}
-          size={1}
-          showX={true}
-          showY={true}
-          showZ={true}
-          onMouseDown={() => {
-            const orbitControls = document.querySelector('.orbit-controls') as any;
-            if (orbitControls) orbitControls.enabled = false;
-          }}
-          onMouseUp={() => {
-            const orbitControls = document.querySelector('.orbit-controls') as any;
-            if (orbitControls) orbitControls.enabled = true;
-          }}
-        />
-      )}
+      {/* TransformControls - always rendered but conditionally attached */}
+      <TransformControls 
+        ref={transformControlsRef}
+        mode={mode}
+        size={1}
+        showX={true}
+        showY={true}
+        showZ={true}
+        onMouseDown={handleTransformMouseDown}
+        onMouseUp={handleTransformMouseUp}
+      />
       
       <OrbitControls 
+        ref={orbitControlsRef}
         makeDefault 
-        className="orbit-controls"
         enablePan={true}
         enableZoom={true}
         enableRotate={true}
