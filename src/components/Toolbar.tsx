@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Move, 
   RotateCw, 
@@ -16,10 +16,15 @@ import {
   Copy,
   Undo2,
   Redo2,
-  Home
+  Home,
+  Upload,
+  Download,
+  FileText
 } from 'lucide-react';
 import { useEditorStore } from '../store';
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter';
+import { STLExporter } from '../utils/stlExporter';
+import { STLLoader } from '../utils/stlLoader';
 import * as THREE from 'three';
 
 export default function Toolbar() {
@@ -37,13 +42,16 @@ export default function Toolbar() {
     groupObjects, 
     ungroupObjects,
     showHoles,
-    setShowHoles
+    setShowHoles,
+    addObject
   } = useEditorStore();
 
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [wireframeMode, setWireframeMode] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleExport = () => {
+  const handleOBJExport = () => {
     const exporter = new OBJExporter();
     const group = new THREE.Group();
     objects.forEach(obj => group.add(obj.clone()));
@@ -58,6 +66,114 @@ export default function Toolbar() {
     link.click();
     
     URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+  };
+
+  const handleSTLExport = () => {
+    const exporter = new STLExporter();
+    const group = new THREE.Group();
+    
+    // Only export solid objects (not holes)
+    objects.forEach(obj => {
+      if (!obj.userData.isHole) {
+        const cloned = obj.clone();
+        cloned.updateMatrixWorld(true);
+        group.add(cloned);
+      }
+    });
+    
+    const result = exporter.parse(group);
+    const blob = new Blob([result], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tinkercad_model_${new Date().toISOString().slice(0, 10)}.stl`;
+    link.click();
+    
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+  };
+
+  const handleSTLImport = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const loader = new STLLoader();
+        let geometry: THREE.BufferGeometry;
+        
+        if (file.name.toLowerCase().endsWith('.stl')) {
+          // Determine if binary or ASCII
+          const result = e.target?.result;
+          if (result instanceof ArrayBuffer) {
+            // Try binary first
+            try {
+              geometry = loader.load(result);
+            } catch {
+              // Fallback to ASCII
+              const text = new TextDecoder().decode(result);
+              geometry = loader.load(text);
+            }
+          } else if (typeof result === 'string') {
+            geometry = loader.load(result);
+          } else {
+            throw new Error('Invalid file format');
+          }
+          
+          // Create material
+          const material = new THREE.MeshStandardMaterial({
+            color: 0x4a9eff,
+            roughness: 0.3,
+            metalness: 0.1,
+          });
+          
+          // Create mesh
+          const mesh = new THREE.Mesh(geometry, material);
+          mesh.name = file.name.replace(/\.[^/.]+$/, '');
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          
+          // Center and scale the imported object
+          const box = new THREE.Box3().setFromObject(mesh);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+          
+          // Move to origin
+          mesh.position.sub(center);
+          
+          // Scale to reasonable size (max dimension = 2 units)
+          const maxDimension = Math.max(size.x, size.y, size.z);
+          if (maxDimension > 2) {
+            const scale = 2 / maxDimension;
+            mesh.scale.setScalar(scale);
+          }
+          
+          // Position on baseplate
+          const newBox = new THREE.Box3().setFromObject(mesh);
+          const newSize = newBox.getSize(new THREE.Vector3());
+          mesh.position.y = newSize.y / 2;
+          
+          addObject(mesh);
+        }
+      } catch (error) {
+        console.error('Error importing STL file:', error);
+        alert('Error importing STL file. Please check the file format.');
+      }
+    };
+    
+    // Read as ArrayBuffer for binary detection
+    reader.readAsArrayBuffer(file);
+    
+    // Reset input
+    event.target.value = '';
   };
 
   const handleColorChange = (color: string) => {
@@ -89,7 +205,7 @@ export default function Toolbar() {
       selectedObjects.forEach(obj => {
         const cloned = obj.clone();
         cloned.position.add(new THREE.Vector3(1, 0, 1));
-        // Add to store would need to be implemented
+        addObject(cloned);
       });
     }
   };
@@ -112,7 +228,6 @@ export default function Toolbar() {
     });
   };
 
-  // Tinkercad-style hole visibility toggle
   const toggleHoleVisibility = () => {
     setShowHoles(!showHoles);
   };
@@ -123,6 +238,15 @@ export default function Toolbar() {
 
   return (
     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".stl"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* Tinkercad-style main toolbar */}
       <div className="bg-white/95 backdrop-blur-xl rounded-xl shadow-lg border border-gray-200 p-3 flex gap-3 items-center mb-3">
         {/* Home button */}
@@ -132,6 +256,49 @@ export default function Toolbar() {
         >
           <Home className="w-5 h-5 text-gray-600" />
         </button>
+        
+        {/* Divider */}
+        <div className="w-px h-6 bg-gray-300" />
+        
+        {/* Import/Export */}
+        <div className="flex gap-1">
+          <button
+            onClick={handleSTLImport}
+            className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-all duration-200"
+            title="Import STL"
+          >
+            <Upload className="w-5 h-5" />
+          </button>
+          
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-all duration-200"
+              title="Export Model"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+            
+            {showExportMenu && (
+              <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2 min-w-[150px] z-50">
+                <button
+                  onClick={handleSTLExport}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <FileText className="w-4 h-4" />
+                  Export STL
+                </button>
+                <button
+                  onClick={handleOBJExport}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Export OBJ
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
         
         {/* Divider */}
         <div className="w-px h-6 bg-gray-300" />
@@ -276,18 +443,6 @@ export default function Toolbar() {
             <Trash2 className="w-5 h-5" />
           </button>
         </div>
-        
-        {/* Divider */}
-        <div className="w-px h-6 bg-gray-300" />
-        
-        {/* Export */}
-        <button
-          onClick={handleExport}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-all duration-200"
-          title="Export as OBJ"
-        >
-          <FileDown className="w-5 h-5" />
-        </button>
       </div>
 
       {/* Tinkercad-style color palette */}
