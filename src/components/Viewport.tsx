@@ -166,6 +166,13 @@ function Scene() {
     camera.lookAt(0, 0, 0);
   }, [camera]);
 
+  // Monitor objects array and clear selectedObject if it's no longer valid
+  useEffect(() => {
+    if (selectedObject && !objects.includes(selectedObject)) {
+      setSelectedObject(null);
+    }
+  }, [objects, selectedObject, setSelectedObject]);
+
   const handleObjectClick = (object: THREE.Object3D, event: any) => {
     event.stopPropagation();
     
@@ -299,8 +306,8 @@ function Scene() {
         );
       })}
       
-      {/* TransformControls - only render when selectedObject exists */}
-      {selectedObject && (
+      {/* TransformControls - only render when selectedObject exists and is valid */}
+      {selectedObject && objects.includes(selectedObject) && (
         <TransformControls 
           object={selectedObject}
           mode={mode}
