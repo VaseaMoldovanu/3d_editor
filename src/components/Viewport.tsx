@@ -201,16 +201,9 @@ function Scene() {
 
   // Check if an object is compatible with TransformControls
   const isTransformCompatible = (object: THREE.Object3D) => {
-    // Exclude Text objects and other custom objects that may cause clone errors
-    if (object.userData?.isText) return false;
-    
-    // Exclude objects that don't have standard Three.js structure
-    if (object.type === 'Text' || object.constructor.name === 'Text') return false;
-    
-    // Only allow standard Three.js objects (Mesh, Group, etc.)
-    return object instanceof THREE.Mesh || 
-           object instanceof THREE.Group || 
-           object instanceof THREE.Object3D;
+    // Only allow standard Three.js Mesh and Group objects
+    // Exclude any custom objects, text objects, or other specialized types
+    return object instanceof THREE.Mesh || object instanceof THREE.Group;
   };
 
   return (
